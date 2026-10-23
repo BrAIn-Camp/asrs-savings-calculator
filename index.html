@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ASRS Savings Calculator</title>
+<style>
+  :root { --blue:#0057B8; --bg:#F4F6F8; --text:#1A1A1A; --muted:#5A5A5A; --green:#1B7F3B; --red:#B3261E; --line:#D9DEE3; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif; }
+  header { background:#fff; border-bottom:1px solid var(--line); padding:16px 32px; }
+  header h1 { margin:0; font-size:20px; }
+  header p { margin:4px 0 0; color:var(--muted); font-size:14px; }
+  main { max-width:1150px; margin:24px auto; padding:0 16px; display:grid; grid-template-columns:1.2fr 1fr; gap:24px; align-items:start; }
+  @media (max-width:850px){ main{grid-template-columns:1fr;} }
+  .card { background:#fff; border:1px solid var(--line); border-radius:6px; padding:20px 24px; }
+  .results { position:sticky; top:16px; }
+  .card h2 { margin:0 0 12px; font-size:13px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); }
+  .group { font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:.06em; color:var(--blue); margin:22px 0 10px; padding-top:14px; border-top:1px solid var(--line); }
+  .group:first-of-type { margin-top:0; padding-top:0; border-top:none; }
+  .slider { display:flex; gap:12px; margin-bottom:16px; }
+  .icon { flex:0 0 36px; height:36px; border-radius:8px; background:#E8F0FA; display:flex; align-items:center; justify-content:center; }
+  .icon svg { width:22px; height:22px; stroke:var(--blue); fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+  .icon svg .f { fill:var(--blue); stroke:none; }
+  .body { flex:1; min-width:0; position:relative; }
+  .row { display:flex; justify-content:space-between; align-items:baseline; font-size:14px; gap:8px; }
+  .val { margin-left:auto; font-weight:600; color:var(--blue); font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .q { display:inline-flex; align-items:center; justify-content:center; width:16px; height:16px; margin-left:6px; border-radius:50%; background:#E8F0FA; color:var(--blue); font-size:11px; font-weight:700; cursor:help; vertical-align:middle; flex:0 0 auto; }
+  .q:hover, .q:focus { background:var(--blue); color:#fff; outline:none; }
+  .tipbox { display:none; position:absolute; left:0; right:0; top:26px; z-index:20; background:#1A1A1A; color:#fff; font-size:12.5px; font-weight:400; line-height:1.45; padding:10px 12px; border-radius:6px; box-shadow:0 4px 14px rgba(0,0,0,.25); text-align:left; cursor:default; }
+  .q:hover .tipbox, .q:focus .tipbox { display:block; }
+  input[type=range] { width:100%; accent-color:var(--blue); margin:4px 0 0; }
+  .big { text-align:center; padding:8px 0 16px; border-bottom:1px solid var(--line); margin-bottom:10px; }
+  .big .label { font-size:13px; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; }
+  .big .num { font-size:44px; font-weight:700; color:var(--green); font-variant-numeric:tabular-nums; }
+  .big .sub { font-size:13px; color:var(--muted); }
+  .big .scope { font-size:14px; font-weight:600; margin-top:2px; }
+  table { width:100%; border-collapse:collapse; font-size:14px; }
+  td { padding:6px 0; border-bottom:1px solid #EEF0F2; }
+  td:last-child { text-align:right; font-variant-numeric:tabular-nums; font-weight:600; }
+  tr.sec td { font-size:12px; text-transform:uppercase; letter-spacing:.06em; color:var(--blue); font-weight:600; padding-top:14px; }
+  tr.total td { border-top:2px solid var(--text); border-bottom:none; }
+  .warn { display:none; background:#FFF4E0; border:1px solid #E0A030; color:#6B4200; padding:8px 10px; border-radius:4px; font-size:13px; margin-top:12px; }
+  .note { font-size:12px; color:var(--muted); margin-top:14px; line-height:1.5; }
+</style>
+</head>
+<body>
+<header>
+  <h1>ASRS Savings Calculator</h1>
+  <p>See what ASRS saves your company each year. Set the sliders to match your firm; results update live.</p>
+</header>
+<main>
+  <section class="card"><h2>Assumptions</h2><div id="sliders"></div></section>
+
+  <section class="card results">
+    <h2>Estimated Value</h2>
+    <div class="big">
+      <div class="label">Annual savings, whole company</div>
+      <div class="num" id="net">$0</div>
+      <div class="scope" id="scope"></div>
+      <div class="sub" id="netSub"></div>
+    </div>
+    <table>
+      <tr class="sec"><td colspan="2">Volume</td></tr>
+      <tr><td>Projects per year (annualized)</td><td id="projectsTotal"></td></tr>
+      <tr><td>Submittal reviews per year (incl. resubmittals)</td><td id="reviews"></td></tr>
+      <tr><td>Review hours today</td><td id="hoursBefore"></td></tr>
+      <tr><td>Share of a PE’s year spent reviewing</td><td id="load"></td></tr>
+      <tr><td>Review hours with software</td><td id="hoursAfter"></td></tr>
+      <tr><td>Hours saved</td><td id="hoursSaved"></td></tr>
+      <tr><td>PE capacity freed</td><td id="fte"></td></tr>
+      <tr><td>Fully loaded PE hourly cost</td><td id="rate"></td></tr>
+      <tr class="sec"><td colspan="2">Savings</td></tr>
+      <tr><td>Labor savings</td><td id="labor"></td></tr>
+      <tr><td>Rework avoided</td><td id="reworkOut"></td></tr>
+      <tr><td>Cost of one delay day</td><td id="daycost"></td></tr>
+      <tr><td>Schedule delay avoided</td><td id="schedule"></td></tr>
+      <tr class="total"><td>Annual savings</td><td id="net2"></td></tr>
+      <tr><td>Savings per project</td><td id="perProject"></td></tr>
+      <tr><td>Savings per PE per year</td><td id="perPE"></td></tr>
+    </table>
+    <div class="warn" id="warn"></div>
+    <p class="note">
+      Review hours = projects × submittals × (1 + resubmittal rate) × minutes ÷ 60.<br>
+      Labor savings = hours × % saved × (salary × overhead ÷ working hours).<br>
+      Rework avoided = projects × errors caught × cost per error.<br>
+      Schedule avoided = projects × days saved × cost per day. Cost per day = price × 8% ÷ (duration × 260 working days).<br>
+      Projects per year = PEs ÷ duration. Annual savings = labor + rework + schedule. Assumes one PE owns each project.
+    </p>
+  </section>
+</main>
+
+<script>
+// ---------- Icons (24x24, stroke style) ----------
+const I = {
+  docs:   '<path d="M8 3h8l4 4v12a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M15 3v5h5"/><path d="M9 13h7M9 17h7"/>',
+  clock:  '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  bolt:   '<path class="f" d="M13 2 4 14h6l-1 8 9-12h-6z"/>',
+  coin:   '<circle cx="12" cy="12" r="9"/><path d="M14.5 9c-.4-1-1.3-1.5-2.5-1.5-1.5 0-2.5.8-2.5 2s1 1.7 2.5 2 2.5.8 2.5 2-1 2-2.5 2c-1.2 0-2.2-.5-2.6-1.6M12 6v1.5M12 16.5V18"/>',
+  build:  '<rect x="5" y="3" width="14" height="18" rx="1"/><path d="M9 7h2M13 7h2M9 11h2M13 11h2M9 15h2M13 15h2M11 21v-3h2v3"/>',
+  person: '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/>',
+  repeat: '<path d="M17 2l4 4-4 4"/><path d="M3 11V9a3 3 0 0 1 3-3h15"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v2a3 3 0 0 1-3 3H3"/>',
+  brief:  '<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18"/>',
+  cal:    '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+  card:   '<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M6 15h4"/>',
+  warn:   '<path d="M12 3 2 20h20z"/><path d="M12 10v4M12 17v.5"/>',
+  brick:  '<rect x="3" y="4" width="18" height="16" rx="1"/><path d="M3 9.3h18M3 14.7h18M9 4v5.3M15 9.3v5.4M9 14.7V20"/>',
+  hour:   '<path d="M6 3h12M6 21h12M7 3c0 5 5 6 5 9s-5 4-5 9M17 3c0 5-5 6-5 9s5 4 5 9"/>',
+  dollarbox:'<rect x="3" y="3" width="18" height="18" rx="3"/><path d="M12 7v10M14.5 9.5c-.3-.9-1.2-1.3-2.5-1.3s-2.5.6-2.5 1.8 1.2 1.6 2.5 1.9 2.5.7 2.5 1.9-1.2 1.8-2.5 1.8-2.2-.4-2.5-1.3"/>',
+};
+
+// ---------- Inputs ----------
+const sliders = [
+  { group:'Review workload' },
+  { id:'submittals', icon:'docs',  label:'Submittals per project', min:50, max:1000, step:25, value:300, fmt:v=>v, tip:'Most office, retail and multifamily projects have 200–500 submittals. Schools have 400–900.' },
+  { id:'minutes',    icon:'clock', label:'Human review time per submittal', min:10, max:300, step:5, value:60, fmt:v=>v+' min', tip:'A simple submittal takes 20\u201330 minutes to review. A complex one takes 3\u20134 hours.' },
+  { id:'resub',      icon:'repeat',label:'Resubmittal rate', min:0, max:100, step:5, value:40, fmt:v=>v+'%', tip:'About one-third of submittals are rejected on first review and must be resubmitted.' },
+  { id:'duration',   icon:'cal',   label:'Project duration', min:1, max:3, step:0.25, value:2, fmt:v=>v+(v===1?' year':' years'), tip:'Most commercial projects run 1–3 years.' },
+  { id:'pes',        icon:'person',label:'Project engineers at the company', min:1, max:100, step:1, value:10, fmt:v=>v, tip:'Set this to the customer’s number of project engineers. All results scale with it.' },
+
+  { group:'Labor savings' },
+  { id:'saved',  icon:'bolt',  label:'Review time saved with ASRS', min:0, max:100, step:1, value:50, fmt:v=>v+'%', tip:'ASRS hands the PE a marked-up first pass, so the PE reviews the flagged items instead of reading every page.' },
+  { id:'salary', icon:'coin',  label:'Project engineer salary', min:60000, max:150000, step:1000, value:90000, fmt:v=>'$'+v.toLocaleString(), tip:'Project engineers earn $58–76k at entry level, $78–102k mid-career and $104–128k at senior level.' },
+  { id:'burden', icon:'brief', label:'Benefits & overhead multiplier', min:1.15, max:1.6, step:0.05, value:1.3, fmt:v=>v.toFixed(2)+'×', tip:'Payroll taxes and benefits typically add 30–50% on top of salary.' },
+  { id:'hours',  icon:'cal',   label:'Working hours per PE per year', min:1800, max:2400, step:20, value:2080, fmt:v=>v.toLocaleString(), tip:'A full-time year is 2,080 hours.' },
+
+  { group:'Rework & schedule (optional upside)' },
+  { id:'errors',   icon:'warn',  label:'Spec errors caught per project that a human would miss', min:0, max:50, step:1, value:5, fmt:v=>v, tip:'Deviations buried in the product data (a value just under the spec minimum, the wrong test standard, a short warranty) that a busy reviewer can miss.' },
+  { id:'rework',   icon:'brick', label:'Cost of rework per missed error', min:500, max:100000, step:500, value:5000, fmt:v=>'$'+v.toLocaleString(), tip:'A $15k rooftop unit costs about $2k to fix at review but about $75k to replace once installed.' },
+  { id:'price',    icon:'dollarbox', label:'Average project price', min:1000000, max:100000000, step:1000000, value:20000000, fmt:v=>'$'+(v/1000000)+'M', tip:'Sets the cost of a delay day. We assume general conditions are 8% of price, spread over working days.' },
+  { id:'days',     icon:'hour',  label:'Schedule days avoided per project', min:0, max:30, step:1, value:2, fmt:v=>v+' days', tip:'Each rejected submittal adds 2–4 weeks to procurement.' },
+
+];
+
+// CALC-START
+function calc(st) {
+  const projectsTotal = st.pes / st.duration;   // one project per PE at a time, annualized
+  const reviews       = projectsTotal * st.submittals * (1 + st.resub / 100);
+  const hoursBefore   = reviews * st.minutes / 60;
+  const hoursSaved    = hoursBefore * st.saved / 100;
+  const hoursAfter    = hoursBefore - hoursSaved;
+  const rate          = st.salary * st.burden / st.hours;
+  const labor         = hoursSaved * rate;
+  const rework        = projectsTotal * st.errors * st.rework;
+  const daycost       = st.price * 0.08 / (st.duration * 260);   // 8% general conditions over 260 working days/yr (our assumption)
+  const schedule      = projectsTotal * st.days * daycost;
+  const gross         = labor + rework + schedule;
+  const cost          = 0;   // savings only; no software cost
+  const net           = gross - cost;
+  const laborNet      = labor - cost;
+  const loadPerPE     = hoursBefore / st.pes / st.hours;   // share of a PE-year spent on review today
+  return { projectsTotal, reviews, hoursBefore, hoursSaved, hoursAfter, rate, labor, rework, schedule, daycost,
+           gross, cost, net, laborNet, loadPerPE,
+           roi: cost > 0 ? net / cost : null,
+           perProject: net / projectsTotal,
+           fte: hoursSaved / st.hours };
+}
+// CALC-END
+
+// ---------- UI ----------
+const state = {};
+const host = document.getElementById('sliders');
+for (const s of sliders) {
+  if (s.group) { host.insertAdjacentHTML('beforeend', `<div class="group">${s.group}</div>`); continue; }
+  state[s.id] = s.value;
+  const div = document.createElement('div');
+  div.className = 'slider';
+  div.innerHTML = `<div class="icon"><svg viewBox="0 0 24 24" aria-hidden="true">${I[s.icon]}</svg></div>
+    <div class="body">
+      <div class="row"><label for="${s.id}">${s.label}</label>${s.tip ? `<span class="q" tabindex="0" role="button" aria-label="About: ${s.label}">?<span class="tipbox" role="tooltip">${s.tip}</span></span>` : ''}<span class="val" id="v-${s.id}"></span></div>
+      <input type="range" id="${s.id}" min="${s.min}" max="${s.max}" step="${s.step}" value="${s.value}">
+    </div>`;
+  host.appendChild(div);
+  const input = div.querySelector('input');
+  input.addEventListener('input', () => { state[s.id] = parseFloat(input.value); render(); });
+}
+
+const $ = id => document.getElementById(id);
+const money = v => (v < 0 ? '-' : '') + '$' + Math.round(Math.abs(v)).toLocaleString();
+const num = (v, d = 0) => v.toLocaleString(undefined, { maximumFractionDigits: d, minimumFractionDigits: d });
+
+function render() {
+  for (const s of sliders) if (s.id) $('v-' + s.id).textContent = s.fmt(state[s.id]);
+  const r = calc(state);
+  $('projectsTotal').textContent = num(r.projectsTotal, 1);
+  $('reviews').textContent = num(r.reviews);
+  $('hoursBefore').textContent = num(r.hoursBefore);
+  $('load').textContent = num(r.loadPerPE * 100) + '%';
+  $('hoursAfter').textContent = num(r.hoursAfter);
+  $('hoursSaved').textContent = num(r.hoursSaved);
+  $('fte').textContent = num(r.fte, 2) + ' PEs';
+  $('rate').textContent = '$' + num(r.rate, 2) + '/hr';
+  $('labor').textContent = money(r.labor);
+  $('reworkOut').textContent = money(r.rework);
+  $('daycost').textContent = money(r.daycost);
+  $('schedule').textContent = money(r.schedule);
+  $('net').textContent = $('net2').textContent = money(r.net);
+  $('net').style.color = r.net < 0 ? 'var(--red)' : 'var(--green)';
+  $('perProject').textContent = money(r.perProject);
+  $('perPE').textContent = money(r.net / state.pes);
+  $('scope').textContent = `${num(state.pes)} PE${state.pes === 1 ? '' : 's'} · ${num(r.projectsTotal, 1)} projects/yr · per year`;
+  $('netSub').textContent = r.gross > 0 ? `${num(r.labor / r.gross * 100)}% labor · ${num(r.rework / r.gross * 100)}% rework · ${num(r.schedule / r.gross * 100)}% schedule` : '';
+  const w = $('warn');
+  if (r.loadPerPE > 1) {
+    w.style.display = 'block';
+    w.textContent = `Check inputs: current review load is ${num(r.loadPerPE * 100)}% of a PE’s working year, which is more than one person can do. Reduce submittals, review time, or resubmittals.`;
+  } else w.style.display = 'none';
+}
+render();
+</script>
+</body>
+</html>
