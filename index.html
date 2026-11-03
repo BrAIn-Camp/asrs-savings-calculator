@@ -11,13 +11,18 @@
   header { background:#fff; border-bottom:1px solid var(--line); padding:16px 32px; }
   header h1 { margin:0; font-size:20px; }
   header p { margin:4px 0 0; color:var(--muted); font-size:14px; }
-  main { max-width:1150px; margin:24px auto; padding:0 16px; display:grid; grid-template-columns:1.2fr 1fr; gap:24px; align-items:start; }
-  @media (max-width:850px){ main{grid-template-columns:1fr;} }
+  main { max-width:1240px; margin:24px auto; padding:0 16px; display:grid; grid-template-columns:minmax(0,1.4fr) minmax(0,1fr); gap:24px; align-items:start; }
   .card { background:#fff; border:1px solid var(--line); border-radius:6px; padding:20px 24px; }
-  .results { position:sticky; top:16px; }
+  .viz { position:sticky; top:16px; display:flex; flex-direction:column; padding:0; overflow:hidden; }
+  .viz .big { position:absolute; top:14px; left:0; right:0; z-index:2; pointer-events:none; text-shadow:0 0 14px #fff, 0 0 4px #fff, 0 0 2px #fff; }
+  #stage { position:relative; width:100%; aspect-ratio:5 / 4; max-height:calc(100vh - 130px); min-height:360px; }
+  .viz { max-height:calc(100vh - 32px); }
+  #stage canvas { position:absolute; inset:0; width:100%; height:100%; display:block; }
+  .viz.noviz { padding:16px 20px; } .viz.noviz .big { position:static; }
+  .viz.noviz #stage { display:none; }
   .card h2 { margin:0 0 12px; font-size:13px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); }
   .group { font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:.06em; color:var(--blue); margin:22px 0 10px; padding-top:14px; border-top:1px solid var(--line); }
-  .group:first-of-type { margin-top:0; padding-top:0; border-top:none; }
+  .group:first-child { margin-top:0; padding-top:0; border-top:none; }
   .slider { display:flex; gap:12px; margin-bottom:16px; }
   .icon { flex:0 0 36px; height:36px; border-radius:8px; background:#E8F0FA; display:flex; align-items:center; justify-content:center; }
   .icon svg { width:22px; height:22px; stroke:var(--blue); fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
@@ -30,63 +35,113 @@
   .tipbox { display:none; position:absolute; left:0; right:0; top:26px; z-index:20; background:#1A1A1A; color:#fff; font-size:12.5px; font-weight:400; line-height:1.45; padding:10px 12px; border-radius:6px; box-shadow:0 4px 14px rgba(0,0,0,.25); text-align:left; cursor:default; }
   .q:hover .tipbox, .q:focus .tipbox { display:block; }
   input[type=range] { width:100%; accent-color:var(--blue); margin:4px 0 0; }
-  .big { text-align:center; padding:8px 0 16px; border-bottom:1px solid var(--line); margin-bottom:10px; }
+  #primary .slider { gap:14px; margin-bottom:26px; }
+  #primary .icon { flex-basis:46px; height:46px; border-radius:10px; }
+  #primary .icon svg { width:26px; height:26px; }
+  #primary .row { font-size:15px; font-weight:600; align-items:center; }
+  #primary .val { font-size:24px; font-weight:700; }
+  #primary input[type=range] { -webkit-appearance:none; appearance:none; height:28px; margin:6px 0 0; background:transparent; cursor:pointer; }
+  #primary input[type=range]::-webkit-slider-runnable-track { height:10px; border-radius:5px; background:linear-gradient(to right, var(--blue) var(--pct, 50%), #DCE5F0 var(--pct, 50%)); }
+  #primary input[type=range]::-moz-range-track { height:10px; border-radius:5px; background:#DCE5F0; }
+  #primary input[type=range]::-moz-range-progress { height:10px; border-radius:5px; background:var(--blue); }
+  #primary input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; width:26px; height:26px; margin-top:-8px; border-radius:50%; background:#fff; border:3px solid var(--blue); box-shadow:0 2px 6px rgba(0,0,0,.25); transition:transform .12s; }
+  #primary input[type=range]::-moz-range-thumb { width:20px; height:20px; border-radius:50%; background:#fff; border:3px solid var(--blue); box-shadow:0 2px 6px rgba(0,0,0,.25); transition:transform .12s; }
+  #primary input[type=range]:active::-webkit-slider-thumb { transform:scale(1.15); }
+  #primary input[type=range]:active::-moz-range-thumb { transform:scale(1.15); }
+  #primary input[type=range]:focus-visible { outline:2px solid var(--blue); outline-offset:4px; border-radius:6px; }
+  .ends { display:flex; justify-content:space-between; font-size:11px; color:var(--muted); margin-top:2px; font-variant-numeric:tabular-nums; }
+  .numrow { position:relative; display:inline-block; }
+  .delta { position:absolute; left:100%; top:50%; transform:translate(10px,-50%); font-size:15px; font-weight:700; padding:3px 10px; border-radius:999px; background:#E3F2E8; color:var(--green); white-space:nowrap; opacity:0; transition:opacity .25s; font-variant-numeric:tabular-nums; }
+  .delta.show { opacity:1; }
+  .delta.neg { background:#EEF0F2; color:var(--muted); }
+  .big { text-align:center; padding:0 0 4px; }
   .big .label { font-size:13px; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; }
-  .big .num { font-size:44px; font-weight:700; color:var(--green); font-variant-numeric:tabular-nums; }
+  .big .num { font-size:44px; font-weight:700; color:var(--green); font-variant-numeric:tabular-nums; line-height:1.15; }
   .big .sub { font-size:13px; color:var(--muted); }
   .big .scope { font-size:14px; font-weight:600; margin-top:2px; }
+  details { margin-top:20px; border-top:1px solid var(--line); padding-top:14px; }
+  summary { cursor:pointer; font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:.06em; color:var(--blue); }
+  details[open] > summary { margin-bottom:14px; }
   table { width:100%; border-collapse:collapse; font-size:14px; }
   td { padding:6px 0; border-bottom:1px solid #EEF0F2; }
   td:last-child { text-align:right; font-variant-numeric:tabular-nums; font-weight:600; }
   tr.sec td { font-size:12px; text-transform:uppercase; letter-spacing:.06em; color:var(--blue); font-weight:600; padding-top:14px; }
   tr.total td { border-top:2px solid var(--text); border-bottom:none; }
-  .warn { display:none; background:#FFF4E0; border:1px solid #E0A030; color:#6B4200; padding:8px 10px; border-radius:4px; font-size:13px; margin-top:12px; }
+  .warn { display:none; background:#FFF4E0; border:1px solid #E0A030; color:#6B4200; padding:8px 10px; border-radius:4px; font-size:13px; margin-top:4px; }
   .note { font-size:12px; color:var(--muted); margin-top:14px; line-height:1.5; }
+  @media (max-width:850px) {
+    header { padding:12px 16px; }
+    main { grid-template-columns:1fr; margin:0 0 24px; padding:0; gap:16px; }
+    .viz { top:0; z-index:10; height:42vh; min-height:300px; border-radius:0; border-width:0 0 1px; }
+    .viz .big { top:8px; }
+    #stage { flex:1; aspect-ratio:auto; max-height:none; min-height:0; }
+    .big .label { font-size:11px; }
+    .big .num { font-size:32px; }
+    .delta { font-size:13px; padding:2px 8px; transform:translate(6px,-50%); }
+    .big .sub { display:none; }
+    .inputs { margin:0 12px; padding:16px; }
+  }
 </style>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
 </head>
 <body>
 <header>
   <h1>FirstRead Savings Calculator</h1>
-  <p>See what FirstRead saves your company each year. Set the sliders to match your firm; results update live.</p>
+  <p>See what FirstRead could save your company each year.</p>
 </header>
 <main>
-  <section class="card"><h2>Assumptions</h2><div id="sliders"></div></section>
-
-  <section class="card results">
-    <h2>Estimated Value</h2>
+  <section class="card viz">
     <div class="big">
       <div class="label">Annual savings, whole company</div>
-      <div class="num" id="net">$0</div>
+      <div class="numrow"><div class="num" id="net">$0</div><div class="delta" id="delta" aria-hidden="true"></div></div>
       <div class="scope" id="scope"></div>
       <div class="sub" id="netSub"></div>
     </div>
-    <table>
-      <tr class="sec"><td colspan="2">Volume</td></tr>
-      <tr><td>Projects per year (annualized)</td><td id="projectsTotal"></td></tr>
-      <tr><td>Submittal reviews per year (incl. resubmittals)</td><td id="reviews"></td></tr>
-      <tr><td>Review hours today</td><td id="hoursBefore"></td></tr>
-      <tr><td>Share of a PE’s year spent reviewing</td><td id="load"></td></tr>
-      <tr><td>Review hours with software</td><td id="hoursAfter"></td></tr>
-      <tr><td>Hours saved</td><td id="hoursSaved"></td></tr>
-      <tr><td>PE capacity freed</td><td id="fte"></td></tr>
-      <tr><td>Fully loaded PE hourly cost</td><td id="rate"></td></tr>
-      <tr class="sec"><td colspan="2">Savings</td></tr>
-      <tr><td>Labor savings</td><td id="labor"></td></tr>
-      <tr><td>Rework avoided</td><td id="reworkOut"></td></tr>
-      <tr><td>Cost of one delay day</td><td id="daycost"></td></tr>
-      <tr><td>Schedule delay avoided</td><td id="schedule"></td></tr>
-      <tr class="total"><td>Annual savings</td><td id="net2"></td></tr>
-      <tr><td>Savings per project</td><td id="perProject"></td></tr>
-      <tr><td>Savings per PE per year</td><td id="perPE"></td></tr>
-    </table>
+    <div id="stage" role="img" aria-label=""></div>
+  </section>
+
+  <section class="card inputs">
+    <h2>Your firm</h2>
+    <div id="primary"></div>
     <div class="warn" id="warn"></div>
-    <p class="note">
-      Review hours = projects × submittals × (1 + resubmittal rate) × minutes ÷ 60.<br>
-      Labor savings = hours × % saved × (salary × overhead ÷ working hours).<br>
-      Rework avoided = projects × errors caught × cost per error.<br>
-      Schedule avoided = projects × days saved × cost per day. Cost per day = price × 8% ÷ (duration × 260 working days).<br>
-      Projects per year = PEs ÷ duration. Annual savings = labor + rework + schedule. Assumes one PE owns each project.
-    </p>
+    <details>
+      <summary>Adjust assumptions</summary>
+      <div id="sliders"></div>
+    </details>
+    <details>
+      <summary>Show the math</summary>
+      <table>
+        <tr class="sec"><td colspan="2">Volume</td></tr>
+        <tr><td>Projects per year (annualized)</td><td id="projectsTotal"></td></tr>
+        <tr><td>Submittal reviews per year (incl. resubmittals)</td><td id="reviews"></td></tr>
+        <tr><td>Review hours today</td><td id="hoursBefore"></td></tr>
+        <tr><td>Share of a PE’s year spent reviewing</td><td id="load"></td></tr>
+        <tr><td>Review hours with software</td><td id="hoursAfter"></td></tr>
+        <tr><td>Hours saved</td><td id="hoursSaved"></td></tr>
+        <tr><td>PE capacity freed</td><td id="fte"></td></tr>
+        <tr><td>Fully loaded PE hourly cost</td><td id="rate"></td></tr>
+        <tr class="sec"><td colspan="2">Savings</td></tr>
+        <tr><td>Labor savings</td><td id="labor"></td></tr>
+        <tr><td>Rework avoided</td><td id="reworkOut"></td></tr>
+        <tr><td>Cost of one delay day</td><td id="daycost"></td></tr>
+        <tr><td>Schedule delay avoided</td><td id="schedule"></td></tr>
+        <tr class="total"><td>Annual savings</td><td id="net2"></td></tr>
+        <tr><td>Savings per project</td><td id="perProject"></td></tr>
+        <tr><td>Savings per PE per year</td><td id="perPE"></td></tr>
+      </table>
+      <p class="note">
+        Review hours = projects × submittals × (1 + resubmittal rate) × minutes ÷ 60.<br>
+        Labor savings = hours × % saved × (salary × overhead ÷ working hours).<br>
+        Rework avoided = projects × errors caught × cost per error.<br>
+        Schedule avoided = projects × days saved × cost per day. Cost per day = price × 8% ÷ (duration × 260 working days).<br>
+        Projects per year = PEs ÷ (PEs per project × duration). Annual savings = labor + rework + schedule.
+      </p>
+    </details>
   </section>
 </main>
 
@@ -112,29 +167,30 @@ const I = {
 // ---------- Inputs ----------
 const sliders = [
   { group:'Review workload' },
-  { id:'submittals', icon:'docs',  label:'Submittals per project', min:50, max:1000, step:25, value:300, fmt:v=>v, tip:'Most office, retail and multifamily projects have 200–500 submittals. Schools have 400–900.' },
-  { id:'minutes',    icon:'clock', label:'Human review time per submittal', min:10, max:300, step:5, value:60, fmt:v=>v+' min', tip:'A simple submittal takes 20\u201330 minutes to review. A complex one takes 3\u20134 hours.' },
-  { id:'resub',      icon:'repeat',label:'Resubmittal rate', min:0, max:100, step:5, value:40, fmt:v=>v+'%', tip:'About one-third of submittals are rejected on first review and must be resubmitted.' },
-  { id:'duration',   icon:'cal',   label:'Project duration', min:1, max:3, step:0.25, value:2, fmt:v=>v+(v===1?' year':' years'), tip:'Most commercial projects run 1–3 years.' },
-  { id:'pes',        icon:'person',label:'Project engineers at the company', min:1, max:100, step:1, value:10, fmt:v=>v, tip:'Set this to the customer’s number of project engineers. All results scale with it.' },
+  { id:'submittals', icon:'docs',  label:'Submittals per project', min:50, max:3000, log:true, value:300, fmt:v=>v.toLocaleString(), tip:'Most office, retail and multifamily projects have 200–500 submittals. Schools have 400–900.' },
+  { id:'minutes',    icon:'clock', label:'Review time per submittal', min:15, max:240, step:5, value:60, fmt:v=>v+' min', tip:'A simple submittal takes 20–30 minutes to review. A complex one takes 3–4 hours.' },
+  { id:'resub',      icon:'repeat',label:'Resubmittal rate', min:0, max:75, step:5, value:40, fmt:v=>v+'%', tip:'About one-third of submittals are rejected on first review and must be resubmitted.' },
+  { id:'duration',   icon:'cal',   label:'Project duration', min:0.5, max:5, step:0.25, value:2, fmt:v=>v+(v===1?' year':' years'), tip:'Most commercial projects run 1–3 years.' },
+  { id:'pesPerProject', icon:'build', label:'PEs per project', min:0.25, max:2, step:0.25, value:1, fmt:v=>v, tip:'Below 1, each PE runs more than one project at a time (0.5 means two projects each). Above 1, PEs share a project.' },
+  { id:'pes',        icon:'person',label:'Project engineers', min:1, max:200, log:true, round:Math.round, value:10, fmt:v=>v, tip:'Set this to your firm’s number of project engineers. All results scale with it.' },
 
   { group:'Labor savings' },
-  { id:'saved',  icon:'bolt',  label:'Review time saved with FirstRead', min:0, max:100, step:1, value:50, fmt:v=>v+'%', tip:'FirstRead hands the PE a marked-up first pass, so the PE reviews the flagged items instead of reading every page.' },
-  { id:'salary', icon:'coin',  label:'Project engineer salary', min:60000, max:150000, step:1000, value:90000, fmt:v=>'$'+v.toLocaleString(), tip:'Project engineers earn $58–76k at entry level, $78–102k mid-career and $104–128k at senior level.' },
-  { id:'burden', icon:'brief', label:'Benefits & overhead multiplier', min:1.15, max:1.6, step:0.05, value:1.3, fmt:v=>v.toFixed(2)+'×', tip:'Payroll taxes and benefits typically add 30–50% on top of salary.' },
-  { id:'hours',  icon:'cal',   label:'Working hours per PE per year', min:1800, max:2400, step:20, value:2080, fmt:v=>v.toLocaleString(), tip:'A full-time year is 2,080 hours.' },
+  { id:'saved',  icon:'bolt',  label:'Review time saved', min:40, max:95, step:1, value:50, fmt:v=>v+'%', tip:'FirstRead hands the PE a marked-up first pass, so the PE reviews the flagged items instead of reading every page.' },
+  { id:'salary', icon:'coin',  label:'PE salary', min:55000, max:150000, step:1000, value:90000, fmt:v=>'$'+v.toLocaleString(), tip:'Project engineers earn $58–76k at entry level, $78–102k mid-career and $104–128k at senior level.' },
+  { id:'burden', icon:'brief', label:'Overhead multiplier', min:1.15, max:1.6, step:0.05, value:1.3, fmt:v=>v.toFixed(2)+'×', tip:'Payroll taxes and benefits typically add 30–50% on top of salary.' },
+  { id:'hours',  icon:'cal',   label:'Hours per PE per year', min:1800, max:2600, step:20, value:2080, fmt:v=>v.toLocaleString(), tip:'A full-time year is 2,080 hours.' },
 
   { group:'Rework & schedule (optional upside)' },
-  { id:'errors',   icon:'warn',  label:'Spec errors caught per project that a human would miss', min:0, max:50, step:1, value:5, fmt:v=>v, tip:'Deviations buried in the product data (a value just under the spec minimum, the wrong test standard, a short warranty) that a busy reviewer can miss.' },
-  { id:'rework',   icon:'brick', label:'Cost of rework per missed error', min:500, max:100000, step:500, value:5000, fmt:v=>'$'+v.toLocaleString(), tip:'A $15k rooftop unit costs about $2k to fix at review but about $75k to replace once installed.' },
-  { id:'price',    icon:'dollarbox', label:'Average project price', min:1000000, max:100000000, step:1000000, value:20000000, fmt:v=>'$'+(v/1000000)+'M', tip:'Sets the cost of a delay day. We assume general conditions are 8% of price, spread over working days.' },
-  { id:'days',     icon:'hour',  label:'Schedule days avoided per project', min:0, max:30, step:1, value:2, fmt:v=>v+' days', tip:'Each rejected submittal adds 2–4 weeks to procurement.' },
+  { id:'errors',   icon:'warn',  label:'Errors caught per project', min:0, max:20, step:1, value:5, fmt:v=>v, tip:'Deviations a busy reviewer would likely miss: a value just under the spec minimum, the wrong test standard, a short warranty.' },
+  { id:'rework',   icon:'brick', label:'Rework cost per error', min:500, max:100000, log:true, value:5000, fmt:v=>'$'+v.toLocaleString(), tip:'A $15k rooftop unit costs about $2k to fix at review but about $75k to replace once installed.' },
+  { id:'price',    icon:'dollarbox', label:'Project value', min:1000000, max:1000000000, log:true, value:20000000, fmt:v=>v >= 1e9 ? '$'+(v/1e9)+'B' : '$'+(v/1e6)+'M', tip:'Sets the cost of a delay day. We assume general conditions are 8% of price, spread over working days.' },
+  { id:'days',     icon:'hour',  label:'Schedule days saved', min:0, max:20, step:1, value:2, fmt:v=>v+' days', tip:'Each rejected submittal adds 2–4 weeks to procurement.' },
 
 ];
 
 // CALC-START
 function calc(st) {
-  const projectsTotal = st.pes / st.duration;   // one project per PE at a time, annualized
+  const projectsTotal = st.pes / (st.pesPerProject * st.duration);   // each project staffed by pesPerProject PEs, annualized
   const reviews       = projectsTotal * st.submittals * (1 + st.resub / 100);
   const hoursBefore   = reviews * st.minutes / 60;
   const hoursSaved    = hoursBefore * st.saved / 100;
@@ -158,29 +214,45 @@ function calc(st) {
 // CALC-END
 
 // ---------- UI ----------
+// The sliders that drive the picture stay in view; the rest sit under "Adjust assumptions".
+const PRIMARY = ['pes', 'submittals', 'minutes', 'errors', 'price'];
 const state = {};
-const host = document.getElementById('sliders');
+let lastNet = 0, deltaBase = null, deltaTimer = 0;
+const host = document.getElementById('sliders'), primaryHost = document.getElementById('primary'), primaryDivs = {};
+let group = null;
 for (const s of sliders) {
-  if (s.group) { host.insertAdjacentHTML('beforeend', `<div class="group">${s.group}</div>`); continue; }
+  if (s.group) { group = s.group; continue; }
   state[s.id] = s.value;
   const div = document.createElement('div');
   div.className = 'slider';
   div.innerHTML = `<div class="icon"><svg viewBox="0 0 24 24" aria-hidden="true">${I[s.icon]}</svg></div>
     <div class="body">
       <div class="row"><label for="${s.id}">${s.label}</label>${s.tip ? `<span class="q" tabindex="0" role="button" aria-label="About: ${s.label}">?<span class="tipbox" role="tooltip">${s.tip}</span></span>` : ''}<span class="val" id="v-${s.id}"></span></div>
-      <input type="range" id="${s.id}" min="${s.min}" max="${s.max}" step="${s.step}" value="${s.value}">
+      <input type="range" id="${s.id}" ${s.log ? `min="0" max="1000" step="1" value="${Math.round(Math.log(s.value / s.min) / Math.log(s.max / s.min) * 1000)}"` : `min="${s.min}" max="${s.max}" step="${s.step}" value="${s.value}"`}>
+      ${PRIMARY.includes(s.id) ? `<div class="ends"><span>${s.fmt(s.min)}</span><span>${s.fmt(s.max)}</span></div>` : ''}
     </div>`;
-  host.appendChild(div);
+  if (PRIMARY.includes(s.id)) primaryDivs[s.id] = div;
+  else {
+    if (group) { host.insertAdjacentHTML('beforeend', `<div class="group">${group}</div>`); group = null; }
+    host.appendChild(div);
+  }
   const input = div.querySelector('input');
-  input.addEventListener('input', () => { state[s.id] = parseFloat(input.value); render(); });
+  input.addEventListener('input', () => { const before = lastNet; state[s.id] = s.log ? fromPos(s, +input.value) : parseFloat(input.value); render(); showDelta(before); });
 }
+for (const id of PRIMARY) primaryHost.appendChild(primaryDivs[id]);
 
 const $ = id => document.getElementById(id);
+const toPos = (s, v) => Math.round(Math.log(v / s.min) / Math.log(s.max / s.min) * 1000);
+const fromPos = (s, p) => { const v = s.min * (s.max / s.min) ** (p / 1000); return s.round ? s.round(v) : Number(v.toPrecision(2)); };
 const money = v => (v < 0 ? '-' : '') + '$' + Math.round(Math.abs(v)).toLocaleString();
 const num = (v, d = 0) => v.toLocaleString(undefined, { maximumFractionDigits: d, minimumFractionDigits: d });
+const count = v => (Math.round(v * 10) / 10).toLocaleString();
 
 function render() {
-  for (const s of sliders) if (s.id) $('v-' + s.id).textContent = s.fmt(state[s.id]);
+  for (const s of sliders) if (s.id) {
+    $('v-' + s.id).textContent = s.fmt(state[s.id]);
+    $(s.id).style.setProperty('--pct', (s.log ? toPos(s, state[s.id]) / 10 : (state[s.id] - s.min) / (s.max - s.min) * 100) + '%');
+  }
   const r = calc(state);
   $('projectsTotal').textContent = num(r.projectsTotal, 1);
   $('reviews').textContent = num(r.reviews);
@@ -198,15 +270,826 @@ function render() {
   $('net').style.color = r.net < 0 ? 'var(--red)' : 'var(--green)';
   $('perProject').textContent = money(r.perProject);
   $('perPE').textContent = money(r.net / state.pes);
-  $('scope').textContent = `${num(state.pes)} PE${state.pes === 1 ? '' : 's'} · ${num(r.projectsTotal, 1)} projects/yr · per year`;
+  $('scope').textContent = `${num(state.pes)} PE${state.pes === 1 ? '' : 's'} · ${count(r.projectsTotal)} project${count(r.projectsTotal) === '1' ? '' : 's'} a year`;
   $('netSub').textContent = r.gross > 0 ? `${num(r.labor / r.gross * 100)}% labor · ${num(r.rework / r.gross * 100)}% rework · ${num(r.schedule / r.gross * 100)}% schedule` : '';
   const w = $('warn');
   if (r.loadPerPE > 1) {
     w.style.display = 'block';
     w.textContent = `Check inputs: current review load is ${num(r.loadPerPE * 100)}% of a PE’s working year, which is more than one person can do. Reduce submittals, review time, or resubmittals.`;
   } else w.style.display = 'none';
+  lastNet = r.net;
+  window.lastCalc = { st: { ...state }, r };
+  if (window.moneyScene) window.moneyScene.update(state, r);
+}
+// While a slider moves, a badge beside the total shows how much the move added or took away.
+function showDelta(before) {
+  if (deltaBase === null) deltaBase = before;
+  const d = lastNet - deltaBase, el = $('delta');
+  el.textContent = (d >= 0 ? '+' : '−') + money(Math.abs(d));
+  el.classList.toggle('neg', d < 0);
+  el.classList.toggle('show', Math.round(d) !== 0);
+  clearTimeout(deltaTimer);
+  deltaTimer = setTimeout(() => { el.classList.remove('show'); deltaBase = null; }, 1800);
 }
 render();
+// If the 3D scene can't load (no WebGL, CDN blocked), the numbers still work on their own.
+setTimeout(() => { if (!window.moneyScene) document.querySelector('.viz').classList.add('noviz'); }, 8000);
+</script>
+
+<script type="module">
+// ---------- The picture: a pile of $1 bills, one hard hat per PE, one building per project a year ----------
+import * as THREE from 'three';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+
+const viz = document.querySelector('.viz'), stage = document.getElementById('stage');
+// ?still renders the finished scene with no motion, the same as the reduced-motion setting (handy for screenshots).
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches || new URLSearchParams(location.search).has('still');
+const DEG = Math.PI / 180;
+
+// Real $1 bill and strap proportions, in inches.
+const L = 6.14, W = 2.61, T = 0.45, BILL_T = 0.0043, MAX_UNITS = 25000;
+const pinch = u => 1 - 0.06 * Math.exp(-((u / 0.9) ** 2)) + 0.03 * (u / (L / 2)) ** 4;
+const flat = () => 1;
+// Up to $2.5M the pile is $100 straps; above that, shrink-wrapped $1,000 bundles of ten straps.
+const UNITS = {
+  strap:  { value: 100,  thick: T,      profile: pinch, tilt: 10, mapSize: 340, cell: .3 },
+  bundle: { value: 1000, thick: 10 * T, profile: flat,  tilt: 6,  mapSize: 760, cell: .5 },
+};
+for (const u of Object.values(UNITS)) u.lift = u.thick * u.profile(L / 2) / 2;
+const CASUAL = { yaw: 14, cross: .2, k: .8, flip: .35, cands: 10, pack: 1.7 };
+
+function rng(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+const ease = t => 1 - (1 - t) ** 3;
+const easeBack = t => 1 + 2.2 * (t - 1) ** 3 + 1.2 * (t - 1) ** 2;
+const dollars = v => '$' + Math.round(v).toLocaleString();
+
+// ---------- Textures, drawn in code ----------
+function canvas(w, h) { const c = document.createElement('canvas'); c.width = w; c.height = h; return [c, c.getContext('2d')]; }
+function grain(g, w, h, n, seed) {
+  const r = rng(seed);
+  for (let i = 0; i < n; i++) {
+    g.fillStyle = r() < .5 ? `rgba(40,50,40,${r() * .10})` : `rgba(255,255,250,${r() * .16})`;
+    g.fillRect(r() * w, r() * h, 1 + r() * 2, 1 + r() * 2);
+  }
+}
+function rope(g, x0, y0, x1, y1, ph) {
+  const len = Math.hypot(x1 - x0, y1 - y0), dx = (x1 - x0) / len, dy = (y1 - y0) / len;
+  g.beginPath();
+  for (let s = 0; s <= len; s += 2) { const o = Math.sin(s * .22 + ph) * 4.5; const x = x0 + dx * s - dy * o, y = y0 + dy * s + dx * o; s ? g.lineTo(x, y) : g.moveTo(x, y); }
+  g.stroke();
+}
+function seal(g, x, y, r, ink, fill, spokes = 72) {
+  g.save(); g.translate(x, y);
+  g.fillStyle = fill; g.beginPath(); g.arc(0, 0, r, 0, Math.PI * 2); g.fill();
+  g.strokeStyle = ink; g.lineWidth = 2;
+  for (let a = 0; a < spokes; a++) { const t = a / spokes * Math.PI * 2; g.beginPath(); g.moveTo(Math.cos(t) * r * .78, Math.sin(t) * r * .78); g.lineTo(Math.cos(t) * r, Math.sin(t) * r); g.stroke(); }
+  g.beginPath(); g.arc(0, 0, r * .55, 0, Math.PI * 2); g.stroke();
+  g.restore();
+}
+function border(g, w, h, m, ink) {
+  g.strokeStyle = ink; g.lineWidth = 2.5; g.strokeRect(m, m, w - 2 * m, h - 2 * m);
+  g.lineWidth = 1; g.strokeRect(m + 13, m + 13, w - 2 * m - 26, h - 2 * m - 26);
+  g.lineWidth = .9;
+  for (const ph of [0, 2.1, 4.2]) {
+    rope(g, m + 6, m + 6, w - m - 6, m + 6, ph); rope(g, m + 6, h - m - 6, w - m - 6, h - m - 6, ph);
+    rope(g, m + 6, m + 6, m + 6, h - m - 6, ph); rope(g, w - m - 6, m + 6, w - m - 6, h - m - 6, ph);
+  }
+}
+function lines(g, w, h, step, ink, seed) {
+  g.lineWidth = 1;
+  for (let y = 34; y < h - 34; y += step) {
+    g.strokeStyle = `rgba(${ink},${.05 + .05 * Math.sin(y * .05 + seed)})`;
+    g.beginPath();
+    for (let x = 34; x <= w - 34; x += 6) { const yy = y + Math.sin(x * .018 + y * .07 + seed) * 2.2; x === 34 ? g.moveTo(x, yy) : g.lineTo(x, yy); }
+    g.stroke();
+  }
+}
+function corners(g, w, h, ink, size) {
+  g.fillStyle = ink; g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = `700 ${size}px Georgia,serif`;
+  for (const [x, y] of [[92, 92], [w - 92, 92], [92, h - 92], [w - 92, h - 92]]) { seal(g, x, y, 46, ink, 'rgba(46,58,48,.12)', 48); g.fillText('1', x, y + 3); }
+  g.textBaseline = 'alphabetic';
+}
+// A stylized $1 face: no portrait, no serial numbers.
+function drawFace() {
+  const w = 1228, h = 522, [c, g] = canvas(w, h);
+  g.fillStyle = '#ADD98F'; g.fillRect(0, 0, w, h);
+  const gr = g.createLinearGradient(0, 0, w, 0);
+  gr.addColorStop(0, 'rgba(150,200,130,.3)'); gr.addColorStop(.5, 'rgba(220,240,205,0)'); gr.addColorStop(1, 'rgba(150,200,130,.3)');
+  g.fillStyle = gr; g.fillRect(0, 0, w, h);
+  lines(g, w, h, 4, '20,90,45', 0); lines(g, w, h, 7, '20,90,45', 2.4);
+  border(g, w, h, 18, '#143D24');
+  corners(g, w, h, '#143D24', 60);
+  const ox = 614, oy = 262, rx = 116, ry = 148;
+  g.save(); g.beginPath(); g.ellipse(ox, oy, rx, ry, 0, 0, Math.PI * 2); g.clip();
+  const rg = g.createRadialGradient(ox, oy - 40, 20, ox, oy, ry);
+  rg.addColorStop(0, '#94BF84'); rg.addColorStop(1, '#173A24');
+  g.fillStyle = rg; g.fillRect(ox - rx, oy - ry, 2 * rx, 2 * ry);
+  g.fillStyle = 'rgba(40,52,42,.8)'; g.beginPath(); g.ellipse(ox, oy + 146, 104, 86, 0, 0, Math.PI * 2); g.fill();
+  g.fillStyle = 'rgba(152,160,142,.55)'; g.beginPath(); g.ellipse(ox - 4, oy - 20, 50, 64, 0, 0, Math.PI * 2); g.fill();
+  g.strokeStyle = 'rgba(24,34,26,.45)'; g.lineWidth = 1.2;
+  for (let y = oy - ry; y < oy + ry; y += 3) { g.beginPath(); g.moveTo(ox - rx, y); g.lineTo(ox + rx, y + 4); g.stroke(); }
+  g.restore();
+  g.strokeStyle = '#143D24'; g.lineWidth = 4; g.beginPath(); g.ellipse(ox, oy, rx + 4, ry + 4, 0, 0, Math.PI * 2); g.stroke();
+  g.lineWidth = 1.5; g.beginPath(); g.ellipse(ox, oy, rx + 12, ry + 12, 0, 0, Math.PI * 2); g.stroke();
+  seal(g, 330, 280, 54, '#1E2620', 'rgba(40,50,42,.5)');
+  seal(g, 900, 300, 48, '#13703A', 'rgba(30,150,70,.75)');
+  g.fillStyle = '#143D24'; g.textAlign = 'center';
+  g.font = '600 22px Georgia,"Times New Roman",serif'; g.fillText('FEDERAL RESERVE NOTE', 614, 64);
+  g.font = '700 40px Georgia,"Times New Roman",serif'; g.fillText('THE UNITED STATES OF AMERICA', 614, 104);
+  g.font = '700 34px Georgia,"Times New Roman",serif'; g.fillText('ONE DOLLAR', 614, 478);
+  g.font = '700 26px Georgia,serif'; g.fillText('ONE', 330, 380); g.fillText('ONE', 900, 392);
+  grain(g, w, h, 9000, 3);
+  return c;
+}
+function drawBack() {
+  const w = 1228, h = 522, [c, g] = canvas(w, h);
+  g.fillStyle = '#6FB457'; g.fillRect(0, 0, w, h);
+  lines(g, w, h, 3, '10,70,30', 1.3);
+  border(g, w, h, 18, '#0F4223');
+  corners(g, w, h, '#0F4223', 64);
+  for (const x of [340, 888]) seal(g, x, 268, 112, '#0F4223', 'rgba(15,66,35,.25)', 120);
+  g.fillStyle = 'rgba(15,66,35,.8)'; g.beginPath(); g.moveTo(290, 310); g.lineTo(340, 215); g.lineTo(390, 310); g.fill();
+  g.beginPath(); g.moveTo(860, 230); g.lineTo(916, 230); g.lineTo(910, 300); g.quadraticCurveTo(888, 322, 866, 300); g.closePath(); g.fill();
+  g.fillStyle = '#0F4223'; g.textAlign = 'center';
+  g.font = '700 36px Georgia,serif'; g.fillText('THE UNITED STATES OF AMERICA', 614, 70);
+  g.font = '800 120px Georgia,serif'; g.fillText('ONE', 614, 310);
+  g.font = '700 40px Georgia,serif'; g.fillText('ONE', 614, 478);
+  grain(g, w, h, 9000, 4);
+  return c;
+}
+// The paper edges of 100 stacked bills.
+function drawEdge() {
+  const w = 1024, h = 230, [c, g] = canvas(w, h), r = rng(5), step = h / 100;
+  for (let i = 0; i < 100; i++) {
+    const t = r(), base = t < .55 ? [184, 226, 158] : t < .88 ? [156, 208, 132] : [118, 176, 96], k = .8 + r() * .18;
+    g.fillStyle = `rgb(${base.map(v => Math.round(v * k)).join(',')})`;
+    g.fillRect(0, i * step, w, step + .5);
+    if (r() < .5) { g.fillStyle = 'rgba(20,50,25,.5)'; g.fillRect(0, i * step + step * .75, w, step * .3); }
+  }
+  for (let k = 0; k < 220; k++) { g.fillStyle = `rgba(230,250,220,${.10 + r() * .18})`; g.fillRect(r() * w, Math.floor(r() * 100) * step, 30 + r() * 260, step); }
+  for (let k = 0; k < 90; k++) { g.fillStyle = `rgba(60,60,50,${r() * .12})`; g.fillRect(r() * w, 0, 1 + r() * 3, h); }
+  return c;
+}
+// The standard bank strap for $1 bills: blue, $100.
+function drawStrap() {
+  const w = 250, h = 530, [c, g] = canvas(w, h);
+  g.fillStyle = '#4271B8'; g.fillRect(0, 0, w, h);
+  g.fillStyle = 'rgba(15,30,60,.35)'; g.fillRect(0, 0, w, 6); g.fillRect(0, h - 6, w, 6); g.fillRect(0, 0, 5, h); g.fillRect(w - 5, 0, 5, h);
+  g.save(); g.translate(w / 2, h / 2); g.rotate(-Math.PI / 2);
+  g.fillStyle = '#0E1A33'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.font = '800 96px Arial,sans-serif'; g.fillText('$100', 0, -14);
+  g.font = '700 24px Arial,sans-serif'; g.fillText('ONE DOLLAR BILLS', 0, 62);
+  g.restore();
+  g.strokeStyle = 'rgba(14,26,51,.7)'; g.lineWidth = 2; g.strokeRect(75, 30, 100, 44);
+  grain(g, w, h, 1800, 6);
+  return c;
+}
+function wrapSheen(g, w, h) {
+  const gr = g.createLinearGradient(0, 0, w, h);
+  gr.addColorStop(0, 'rgba(255,255,255,.20)'); gr.addColorStop(.45, 'rgba(255,255,255,0)'); gr.addColorStop(.6, 'rgba(255,255,255,.14)'); gr.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = gr; g.fillRect(0, 0, w, h);
+}
+// Ten straps stacked and shrink-wrapped: long side, short end, top.
+function drawBundleSide(edge, withBand) {
+  const w = withBand ? 1024 : 440, h = 750, [c, g] = canvas(w, h), row = h / 10;
+  for (let i = 0; i < 10; i++) {
+    g.drawImage(edge, 0, 0, edge.width, edge.height, 0, i * row, w, row);
+    if (withBand) { g.fillStyle = '#4271B8'; g.fillRect(w * .398, i * row, w * .204, row); }
+    g.fillStyle = 'rgba(40,44,36,.45)'; g.fillRect(0, (i + 1) * row - 2, w, 2);
+  }
+  wrapSheen(g, w, h);
+  return c;
+}
+function drawBundleTop(face, strap) {
+  const w = 1228, h = 522, [c, g] = canvas(w, h);
+  g.drawImage(face, 0, 0);
+  g.drawImage(strap, 0, 0, strap.width, strap.height, w * .398, 0, w * .204, h);
+  wrapSheen(g, w, h);
+  return c;
+}
+// Building windows: a 4 x 4 block of bays.
+function drawWindows() {
+  const w = 512, h = 512, [c, g] = canvas(w, h), r = rng(9);
+  g.fillStyle = '#E3E8ED'; g.fillRect(0, 0, w, h);
+  for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) {
+    const l = 64 + r() * 18;
+    g.fillStyle = `hsl(210,22%,${l}%)`; g.fillRect(i * 128 + 14, j * 128 + 22, 100, 84);
+    g.fillStyle = 'rgba(255,255,255,.25)'; g.fillRect(i * 128 + 14, j * 128 + 22, 100, 10);
+  }
+  return c;
+}
+
+// ---------- Renderer, lights, cameras ----------
+let renderer;
+try {
+  renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+} catch (e) {
+  viz.classList.add('noviz');
+  throw e;
+}
+renderer.setPixelRatio(Math.min(devicePixelRatio, innerWidth < 850 ? 1.5 : 2));
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.autoClear = false;
+stage.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.environment = new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(), .04).texture;
+scene.environmentIntensity = .4;
+const camera = new THREE.PerspectiveCamera(16, 1, 1, 12000);
+const sun = new THREE.DirectionalLight(0xfff4e2, 2.5);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+sun.shadow.bias = -.0004; sun.shadow.normalBias = .03;
+scene.add(sun, sun.target, new THREE.HemisphereLight(0xffffff, 0xc8cfbf, .3));
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(6000, 6000), new THREE.ShadowMaterial({ opacity: .22 }));
+ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true;
+scene.add(ground);
+
+// The projects stand in their own backdrop scene: a hazy skyline behind the team.
+const BG = new THREE.Color(0xFFFFFF);
+const back = { scene: new THREE.Scene(), cam: new THREE.PerspectiveCamera(30, 1, 10, 8000), D: 1400 };
+back.scene.fog = new THREE.Fog(BG, 300, 2600);
+back.scene.add(new THREE.HemisphereLight(0xffffff, 0xdfe5ea, 1.6));
+{ const d = new THREE.DirectionalLight(0xffffff, 1.1); d.position.set(-1, 2, 1.5); back.scene.add(d); }
+back.cam.position.set(0, 0, back.D); back.cam.lookAt(0, 0, 0);
+
+
+// ---------- Money materials and meshes ----------
+const aniso = renderer.capabilities.getMaxAnisotropy();
+function tex(c) { const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = aniso; return t; }
+const faceC = drawFace(), backC = drawBack(), edgeC = drawEdge(), strapC = drawStrap();
+const paper = { roughness: .78, metalness: 0 };
+const faceM = new THREE.MeshStandardMaterial({ map: tex(faceC), ...paper });
+const backM = new THREE.MeshStandardMaterial({ map: tex(backC), ...paper });
+const edgeM = new THREE.MeshStandardMaterial({ map: tex(edgeC), roughness: .9 });
+const strapTopM = new THREE.MeshStandardMaterial({ map: tex(strapC), roughness: .6 });
+const strapSideM = new THREE.MeshStandardMaterial({ color: 0x3A66AC, roughness: .6 });
+const billEdgeM = new THREE.MeshStandardMaterial({ color: 0xADD98F, roughness: .9 });
+const wrap = { roughness: .5, clearcoat: .7, clearcoatRoughness: .3 };
+const bSideM = new THREE.MeshPhysicalMaterial({ map: tex(drawBundleSide(edgeC, true)), ...wrap });
+const bEndM = new THREE.MeshPhysicalMaterial({ map: tex(drawBundleSide(edgeC, false)), ...wrap });
+const bTopM = new THREE.MeshPhysicalMaterial({ map: tex(drawBundleTop(faceC, strapC)), ...wrap });
+
+// A strapped stack: bills puff out at the ends and pinch under the strap.
+const bodyG = new THREE.BoxGeometry(L, T, W, 10, 1, 1);
+{ const p = bodyG.attributes.position; for (let i = 0; i < p.count; i++) p.setY(i, p.getY(i) * pinch(p.getX(i))); bodyG.computeVertexNormals(); }
+const bandG = new THREE.BoxGeometry(1.25, T * pinch(0) + .012, W + .02);
+const bundleG = new THREE.BoxGeometry(L + .04, 10 * T, W + .04);
+// A loose bill, curled up slightly at the ends.
+const billG = new THREE.BoxGeometry(L, BILL_T, W, 16, 1, 1);
+{ const p = billG.attributes.position; for (let i = 0; i < p.count; i++) p.setY(i, p.getY(i) + .07 * (p.getX(i) / (L / 2)) ** 2); billG.computeVertexNormals(); }
+
+function instanced(geo, mats, n) {
+  const m = new THREE.InstancedMesh(geo, mats, n);
+  m.castShadow = m.receiveShadow = true; m.count = 0; m.frustumCulled = false;
+  scene.add(m);
+  return m;
+}
+const meshes = {
+  strap: [instanced(bodyG, [edgeM, edgeM, faceM, backM, edgeM, edgeM], MAX_UNITS),
+          instanced(bandG, [strapSideM, strapSideM, strapTopM, strapTopM, strapSideM, strapSideM], MAX_UNITS)],
+  bundle: [instanced(bundleG, [bEndM, bEndM, bTopM, bTopM, bSideM, bSideM], MAX_UNITS)],
+};
+const bills = instanced(billG, [billEdgeM, billEdgeM, faceM, backM, billEdgeM, billEdgeM], 100);
+
+// ---------- Placement: fake physics on a height map ----------
+// Each unit drops onto the lowest well-supported spot near the middle, so the pile builds into a mound.
+// Unit i always lands in the same place, so moving a slider back and forth never reshuffles the pile.
+class HeightMap {
+  constructor(size, cell, ox = 0, oz = 0) { this.cell = cell; this.half = size / 2; this.ox = ox; this.oz = oz; this.n = Math.ceil(size / cell); this.h = new Float32Array(this.n * this.n); }
+  idx(x, z) { const i = Math.floor((x - this.ox + this.half) / this.cell), j = Math.floor((z - this.oz + this.half) / this.cell); return i < 0 || j < 0 || i >= this.n || j >= this.n ? -1 : j * this.n + i; }
+  get(x, z) { const k = this.idx(x, z); return k < 0 ? 0 : this.h[k]; }
+  raise(x, z, v) { const k = this.idx(x, z); if (k >= 0 && v > this.h[k]) this.h[k] = v; }
+}
+function samples(step) {
+  const out = [], nu = Math.ceil(L / step), nv = Math.ceil(W / step);
+  for (let a = 0; a <= nu; a++) for (let b = 0; b <= nv; b++) out.push([-L / 2 + .05 + (L - .1) * a / nu, -W / 2 + .05 + (W - .1) * b / nv]);
+  return out;
+}
+const PROBE = samples(.4), STAMP = samples(.22);
+const hs = new Float32Array(PROBE.length);
+
+function probe(map, cx, cz, yaw) {
+  const c = Math.cos(yaw), s = Math.sin(yaw);
+  for (let k = 0; k < PROBE.length; k++) { const [u, v] = PROBE[k]; hs[k] = map.get(cx + u * c + v * s, cz - u * s + v * c); }
+}
+// Lowest resting pose on the probed surface, tilting up to maxTilt degrees.
+function settle(maxTilt) {
+  const lim = Math.tan(maxTilt * DEG), n = PROBE.length;
+  const y0At = (su, sv) => { let m = -1e9; for (let k = 0; k < n; k++) { const y = hs[k] - su * PROBE[k][0] - sv * PROBE[k][1]; if (y > m) m = y; } return m; };
+  let su = 0, sv = 0, best = y0At(0, 0);
+  for (let k = -6; k <= 6; k++) { const t = lim * k / 6, y = y0At(t, 0); if (y < best - 1e-6) { best = y; su = t; } }
+  for (let k = -6; k <= 6; k++) { const t = lim * k / 6, y = y0At(su, t); if (y < best - 1e-6) { best = y; sv = t; } }
+  const y0 = Math.max(0, best);
+  let gap = 0; for (let k = 0; k < n; k++) gap += y0 + su * PROBE[k][0] + sv * PROBE[k][1] - hs[k];
+  return { su, sv, y0, gap: gap / n };
+}
+function stamp(map, p, thick, profile) {
+  const c = Math.cos(p.yaw), s = Math.sin(p.yaw);
+  for (const [u, v] of STAMP) map.raise(p.cx + u * c + v * s, p.cz - u * s + v * c, p.y0 + p.su * u + p.sv * v + thick * profile(u));
+}
+
+const piles = {};
+function pileState(mode) { return piles[mode] ||= { placed: [], map: new HeightMap(UNITS[mode].mapSize, UNITS[mode].cell) }; }
+function placeOne(mode, st) {
+  const u = UNITS[mode], i = st.placed.length, r = rng(1000 + i * 7919);
+  const base = Math.cbrt(3 * (i + 1) * L * W * u.thick * CASUAL.pack / (Math.PI * CASUAL.k)) + 2.5;
+  const cands = [];
+  for (let k = 0; k < CASUAL.cands; k++) {
+    const a = r() * Math.PI * 2, d = Math.sqrt(r()) * base * 1.1;
+    const cx = Math.cos(a) * d, cz = Math.sin(a) * d;
+    const yaw = (r() * 2 - 1) * CASUAL.yaw * DEG + (r() < CASUAL.cross ? Math.PI / 2 : 0) + (r() < .5 ? Math.PI : 0);
+    probe(st.map, cx, cz, yaw);
+    let m = 0; for (let j = 0; j < hs.length; j++) if (hs[j] > m) m = hs[j];
+    let gap = 0; for (let j = 0; j < hs.length; j++) gap += m - hs[j];
+    cands.push({ cx, cz, yaw, d, score: m + CASUAL.k * d + .8 * gap / hs.length });
+  }
+  cands.sort((a, b) => a.score - b.score);
+  let best = null, bestScore = 1e9;
+  for (const c of cands.slice(0, 2)) {
+    probe(st.map, c.cx, c.cz, c.yaw);
+    const s = settle(u.tilt), score = s.y0 + CASUAL.k * c.d + .8 * s.gap + .4 * (Math.abs(s.su) + Math.abs(s.sv));
+    if (score < bestScore) { bestScore = score; best = { cx: c.cx, cz: c.cz, yaw: c.yaw, ...s }; }
+  }
+  best.flip = r() < CASUAL.flip; best.spin = r() * 2 - 1; best.shade = r();
+  stamp(st.map, best, u.thick, u.profile);
+  st.placed.push(best);
+}
+function ensurePlaced(mode, st, n, budgetMs) {
+  const t0 = performance.now();
+  while (st.placed.length < n && performance.now() - t0 < budgetMs) placeOne(mode, st);
+  return Math.min(n, st.placed.length);
+}
+
+const _e = new THREE.Euler(), _q = new THREE.Quaternion(), _v = new THREE.Vector3(), _s = new THREE.Vector3(1, 1, 1), _m = new THREE.Matrix4();
+const FLIP = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI);
+function pose(p, lift, dy, extraYaw, out) {
+  _e.set(-Math.atan(p.sv), p.yaw + extraYaw, Math.atan(p.su), 'YZX'); _q.setFromEuler(_e);
+  if (p.flip) _q.multiply(FLIP);
+  _v.set(p.cx, p.y0 + lift + dy, p.cz);
+  return out.compose(_v, _q, _s);
+}
+
+// ---------- The pile: new units drop in; removed units simply vanish, so gains feel bigger than losses ----------
+const SETTLED = 0, DROP = 1;
+const phase = new Uint8Array(MAX_UNITS), start = new Float64Array(MAX_UNITS);
+const pile = { mode: null, target: 0, count: 0, loose: 0, active: new Set(), boundsN: -1, box: null, looseKey: '' };
+const col = new THREE.Color();
+
+function setPile(amount) {
+  const mode = amount > UNITS.strap.value * MAX_UNITS ? 'bundle' : 'strap';
+  const u = UNITS[mode];
+  if (mode !== pile.mode) {
+    if (pile.mode) for (const m of meshes[pile.mode]) m.count = 0;
+    pile.mode = mode; pile.count = 0; pile.active.clear(); phase.fill(SETTLED); pile.boundsN = -1;
+  }
+  pile.target = Math.min(MAX_UNITS, Math.floor(amount / u.value));
+  pile.loose = mode === 'strap' ? Math.round(amount - pile.target * u.value) % 100 : 0;
+  pile.capped = amount >= u.value * (MAX_UNITS + 1);
+}
+
+function placeUnit(i, u, p, dy, yaw) {
+  pose(p, u.lift, dy, yaw, _m);
+  for (const m of meshes[pile.mode]) m.setMatrixAt(i, _m);
+}
+
+function stepPile(now) {
+  if (!pile.mode) return false;
+  const u = UNITS[pile.mode], st = pileState(pile.mode), ms = meshes[pile.mode];
+  const avail = ensurePlaced(pile.mode, st, pile.target, 8);
+  if (avail !== pile.boundsN) { measurePile(st, avail); pile.boundsN = avail; layoutPeople(); frameDirty = true; }
+  const H = 8 + pile.box.top * .25;
+
+  // Units past the target vanish at once.
+  if (pile.count > pile.target) {
+    for (let i = pile.target; i < pile.count; i++) { phase[i] = SETTLED; pile.active.delete(i); }
+    pile.count = pile.target;
+  }
+
+  // Release more units, faster when there are many to go. On a big jump, most land at once and the last few hundred fall.
+  const want = Math.min(pile.target, avail);
+  if (pile.count < want && pile.target - pile.count > 1500 && !reduceMotion) {
+    const upto = Math.min(want, pile.target - 600);
+    for (let i = pile.count; i < upto; i++) {
+      const p = st.placed[i];
+      col.setHSL(.28 + p.shade * .04, .5, .84 + (p.shade * 7.3 % 1) * .12);
+      ms[0].setColorAt(i, col);
+      phase[i] = SETTLED; placeUnit(i, u, p, 0, 0);
+    }
+    if (upto > pile.count) { pile.count = upto; ms[0].instanceColor.needsUpdate = true; }
+  }
+  if (pile.count < want) {
+    const k = reduceMotion ? want - pile.count : Math.min(want - pile.count, Math.max(5, Math.ceil((pile.target - pile.count) / 20)));
+    for (let j = 0; j < k; j++) {
+      const i = pile.count++, p = st.placed[i];
+      col.setHSL(.28 + p.shade * .04, .5, .84 + (p.shade * 7.3 % 1) * .12);
+      ms[0].setColorAt(i, col);
+      if (reduceMotion) { phase[i] = SETTLED; placeUnit(i, u, p, 0, 0); }
+      else { phase[i] = DROP; start[i] = now + j * 3; pile.active.add(i); placeUnit(i, u, p, H, p.spin * .6); }
+    }
+    ms[0].instanceColor.needsUpdate = true;
+  }
+
+  for (const i of pile.active) {
+    const p = st.placed[i], t = (now - start[i]) / 450;
+    if (t >= 1) { phase[i] = SETTLED; pile.active.delete(i); placeUnit(i, u, p, 0, 0); continue; }
+    const f = Math.max(0, t) / .8;
+    const dy = t < .8 ? H * (1 - f * f) : u.thick * .25 * Math.sin(Math.PI * (t - .8) / .2);
+    placeUnit(i, u, p, dy, p.spin * .6 * (1 - Math.max(0, t)) ** 2);
+  }
+  for (const m of ms) { m.count = pile.count; m.instanceMatrix.needsUpdate = true; }
+
+  // Loose bills sit on the finished pile only.
+  const settled = pile.count === pile.target && pile.active.size === 0 && avail === pile.target;
+  if (settled && pile.mode === 'strap') {
+    const key = pile.target + ':' + pile.loose;
+    if (key !== pile.looseKey) { layLooseBills(st, pile.target, pile.loose); pile.looseKey = key; }
+  }
+  bills.visible = settled && pile.mode === 'strap';
+  return pile.active.size > 0 || pile.count !== pile.target || avail < pile.target;
+}
+
+function measurePile(st, n) {
+  const u = UNITS[pile.mode];
+  const box = { x0: 0, x1: 0, z0: 0, z1: 0, top: 0, R: 0, Rs: 0 };
+  let sum = 0;
+  for (let i = 0; i < n; i++) {
+    const p = st.placed[i], d = Math.hypot(p.cx, p.cz);
+    box.x0 = Math.min(box.x0, p.cx - L / 2); box.x1 = Math.max(box.x1, p.cx + L / 2);
+    box.z0 = Math.min(box.z0, p.cz - L / 2); box.z1 = Math.max(box.z1, p.cz + L / 2);
+    box.top = Math.max(box.top, p.y0 + u.thick);
+    box.R = Math.max(box.R, d + L / 2);
+    sum += d;
+  }
+  // R reaches the farthest stray unit; Rs is the solid edge of the mound (a cone's units average half its radius out).
+  box.Rs = n ? 2 * sum / n + L / 4 : 0;
+  pile.box = box;
+}
+
+// Remainder under $100: a fan of loose bills on the peak, with a few slid to the floor.
+function layLooseBills(st, n, loose) {
+  let peak = { cx: 0, cz: 0, yaw: .3, top: 0 };
+  for (let i = 0; i < n; i++) {
+    const p = st.placed[i], top = p.y0 + T;
+    if (top > peak.top + .05 || (Math.abs(top - peak.top) < .05 && Math.hypot(p.cx, p.cz) < Math.hypot(peak.cx, peak.cz))) peak = { ...p, top };
+  }
+  const local = new HeightMap(44, .25, peak.cx, peak.cz);
+  for (let i = 0; i < n; i++) { const p = st.placed[i]; if (Math.abs(p.cx - peak.cx) < 18 && Math.abs(p.cz - peak.cz) < 18) stamp(local, p, T, pinch); }
+  const r = rng(4242 + n), R = pile.box.R;
+  const fall = loose >= 6 && n >= 4 ? Math.min(3, Math.round(loose * .08)) : 0;
+  const baseYaw = peak.yaw + (r() - .5) * 1.2, dir = r() < .5 ? 1 : -1;
+  for (let j = 0; j < loose; j++) {
+    let p;
+    if (j < fall) {
+      const a = r() * Math.PI * 2, d = R + 1 + r() * 2;
+      p = { cx: Math.cos(a) * d, cz: Math.sin(a) * d, yaw: r() * Math.PI, su: 0, sv: 0, y0: 0 };
+    } else {
+      const f = (j - fall) / Math.max(1, loose - fall - 1);
+      const yaw = baseYaw + dir * (f - .5) * 1.4 + (r() - .5) * .1;
+      const px = peak.cx - Math.cos(baseYaw) * L * .3, pz = peak.cz + Math.sin(baseYaw) * L * .3;
+      const cx = px + Math.cos(yaw) * L * .3 + (r() - .5) * .15, cz = pz - Math.sin(yaw) * L * .3 + (r() - .5) * .15;
+      probe(local, cx, cz, yaw);
+      p = { cx, cz, yaw, ...settle(5) };
+      stamp(local, p, BILL_T + .002, flat);
+    }
+    p.flip = r() < .2;
+    bills.setMatrixAt(j, pose(p, BILL_T / 2, 0, 0, _m));
+  }
+  bills.count = loose; bills.instanceMatrix.needsUpdate = true;
+}
+
+// ---------- The team: one white hard hat per PE, set out on the floor beside the pile ----------
+const MAX_PEOPLE = 200;
+function part(geo, x, y, z, sx = 1, sy = 1, sz = 1) {
+  return geo.applyMatrix4(new THREE.Matrix4().compose(new THREE.Vector3(x, y, z), new THREE.Quaternion(), new THREE.Vector3(sx, sy, sz)));
+}
+// About 11 in long, 9 in wide and 7 in tall, with a ridge over the crown and a short front brim.
+const halfSphere = () => new THREE.SphereGeometry(1, 32, 14, 0, Math.PI * 2, 0, Math.PI / 2);
+const hatG = mergeGeometries([
+  part(halfSphere(), 0, .35, 0, 4.4, 5.6, 5.3),
+  part(halfSphere(), 0, .35, 0, .65, 6.1, 5.6),
+  part(new THREE.CylinderGeometry(1, 1, .3, 40), 0, .3, .9, 4.9, 1, 6.1),
+]);
+const hats = instanced(hatG, new THREE.MeshStandardMaterial({ color: 0xF3F3EF, roughness: .28 }), MAX_PEOPLE);
+// The hats live in their own foreground layer, drawn over the lower-left corner with the pile's lens, distance and light,
+// so they stay visible and countable however big the pile grows.
+const front = { scene: new THREE.Scene(), cam: new THREE.PerspectiveCamera(16, 1, 1, 12000), center: new THREE.Vector3(), sx: 0, y0: 0, goalSx: 0, goalY0: 0, span: 30 };
+scene.remove(hats); front.scene.add(hats);
+front.scene.environment = scene.environment; front.scene.environmentIntensity = scene.environmentIntensity;
+const frontSun = new THREE.DirectionalLight(0xfff4e2, 2.5);
+frontSun.castShadow = true; frontSun.shadow.mapSize.set(1024, 1024); frontSun.shadow.bias = -.0004; frontSun.shadow.normalBias = .03;
+front.scene.add(frontSun, frontSun.target, new THREE.HemisphereLight(0xffffff, 0xc8cfbf, .3));
+{ const g = new THREE.Mesh(new THREE.PlaneGeometry(4000, 4000), new THREE.ShadowMaterial({ opacity: .22 })); g.rotation.x = -Math.PI / 2; g.receiveShadow = true; front.scene.add(g); }
+const people = { n: 0, list: [] };
+for (let i = 0; i < MAX_PEOPLE; i++) people.list.push({ x: 0, y: 0, z: 0, yaw: 0, tx: 0, ty: 0, tz: 0, tyaw: 0, s: 0, ts: 0 });
+const VIEW_AZ = 30 * DEG, VIEW_EL = 7 * DEG;
+
+// Hats nest in stacks of five, the way they stack on a shelf, so they count off in fives. Stacks stand in rows of three
+// (15 PEs) facing the viewer; further rows run back, offset so each shows between the ones in front.
+const PER_STACK = 5, STACKS_PER_ROW = 3, NEST = 3.2;
+function layoutPeople() {
+  const n = people.n;
+  const fx = Math.sin(VIEW_AZ), fz = Math.cos(VIEW_AZ), rx = Math.cos(VIEW_AZ), rz = -Math.sin(VIEW_AZ);
+  for (let i = 0; i < n; i++) {
+    const f = people.list[i], stack = Math.floor(i / PER_STACK), level = i % PER_STACK;
+    const row = Math.floor(stack / STACKS_PER_ROW), c = stack % STACKS_PER_ROW, r = rng(600 + stack * 7);
+    const side = c * 14.5 + (row % 2 ? 7 : 0), depth = -row * 15;
+    f.tx = rx * side + fx * depth; f.tz = rz * side + fz * depth; f.ty = level * NEST; f.tyaw = VIEW_AZ + (r() - .5) * .3; f.ts = 1;
+    if (f.s === 0) { f.x = f.tx; f.y = f.ty; f.z = f.tz; f.yaw = f.tyaw; }
+  }
+  for (let k = n; k < MAX_PEOPLE; k++) people.list[k].ts = 0;
+}
+function stepPeople(dt) {
+  const k = reduceMotion ? 1 : 1 - Math.exp(-dt * 6);
+  let busy = false, top = 0;
+  for (let i = 0; i < MAX_PEOPLE; i++) {
+    const f = people.list[i];
+    if (f.s === 0 && f.ts === 0) continue;
+    f.x += (f.tx - f.x) * k; f.y += (f.ty - f.y) * k; f.z += (f.tz - f.z) * k; f.yaw += (f.tyaw - f.yaw) * k;
+    f.s = reduceMotion ? f.ts : f.ts > f.s ? Math.min(f.ts, f.s + dt / .35) : Math.max(f.ts, f.s - dt / .25);
+    if (Math.abs(f.tx - f.x) > .05 || Math.abs(f.ty - f.y) > .05 || Math.abs(f.tz - f.z) > .05 || f.s !== f.ts) busy = true;
+    const sc = f.ts ? easeBack(f.s) : ease(f.s);
+    _q.setFromAxisAngle(THREE.Object3D.DEFAULT_UP, f.yaw); _v.set(f.x, f.y, f.z); _s.set(sc, sc, sc);
+    hats.setMatrixAt(i, _m.compose(_v, _q, _s));
+    if (f.s > 0) top = i + 1;
+  }
+  _s.set(1, 1, 1);
+  hats.count = top; hats.instanceMatrix.needsUpdate = true;
+  return busy;
+}
+
+// ---------- The projects: one building per project a year; a partial year is a building still going up, with a crane ----------
+// The buildings run down past the bottom of the scene, so they stand on the same ground as the pile.
+const windowTex = new THREE.CanvasTexture(drawWindows());
+windowTex.colorSpace = THREE.SRGBColorSpace; windowTex.wrapS = windowTex.wrapT = THREE.RepeatWrapping; windowTex.anisotropy = aniso;
+const DEEP = 3000;
+const city = { total: 0, partial: false, items: [], site: null, halfW: 400, unitH: back.D * Math.tan(back.cam.fov * DEG / 2) };
+function facade(tint) {
+  const side = new THREE.MeshStandardMaterial({ map: windowTex, color: tint, roughness: .7 });
+  const roof = new THREE.MeshStandardMaterial({ color: tint.clone().multiplyScalar(.9), roughness: .9 });
+  return [side, side, roof, roof, side, side];
+}
+function scaleUV(geo, w, h, d) {
+  const uv = geo.attributes.uv, base = geo.userData.uv0 ||= Float32Array.from(uv.array), bay = 64, floor = 48;
+  const faces = [[d, h], [d, h], [0, 0], [0, 0], [w, h], [w, h]];
+  for (let f = 0; f < 6; f++) for (let k = 0; k < 4; k++) {
+    const i = f * 4 + k, [fw, fh] = faces[f];
+    uv.setXY(i, fw ? base[i * 2] * fw / bay : base[i * 2], fh ? base[i * 2 + 1] * fh / floor : base[i * 2 + 1]);
+  }
+  uv.needsUpdate = true;
+}
+function tower(i) {
+  const r = rng(900 + i * 17), t = r(), d = .7 + r() * .4;
+  const mesh = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1).translate(0, -.5, 0), facade(new THREE.Color().setHSL(.58, .08 + r() * .06, .80 + r() * .08)));
+  mesh.userData = { t, d, s: 0, ts: 1, base: 0, top: 0 };
+  mesh.visible = false;
+  back.scene.add(mesh);
+  return mesh;
+}
+// Finished lower floors, bare steel above them, and a tower crane.
+function constructionSite(w, H, s) {
+  const g = new THREE.Group(), d = w * .8, H1 = H * .55;
+  const steel = new THREE.MeshStandardMaterial({ color: 0x8A9098, roughness: .6 });
+  const yellow = new THREE.MeshStandardMaterial({ color: 0xE2B43C, roughness: .5 }), dark = new THREE.MeshStandardMaterial({ color: 0x333333 });
+  const box = (bw, y0, y1, bd, x, z, m) => { const b = new THREE.Mesh(new THREE.BoxGeometry(bw, y1 - y0, bd), m); b.position.set(x, (y0 + y1) / 2, z); g.add(b); return b; };
+  const lower = box(w, -DEEP, H1, d, 0, 0, facade(new THREE.Color().setHSL(.58, .1, .82)));
+  scaleUV(lower.geometry, w, H1 + DEEP, d);
+  for (const fx of [-.5, -.17, .17, .5]) for (const fz of [-.5, 0, .5]) box(3, H1, H, 3, fx * w, fz * d, steel);
+  for (let f = 1; f <= 3; f++) { const y = H1 + (H - H1) * f / 3; box(w + 4, y - 2, y, d + 4, 0, 0, steel); }
+  const mx = w * .62, mz = -d * .2;
+  box(6, -DEEP, H + 70, 6, mx, mz, yellow);
+  box(w * 1.7, H + 62, H + 67, 5, mx - w * .55, mz, yellow);
+  box(w * .45, H + 62, H + 67, 5, mx + w * .32, mz, yellow);
+  box(w * .12, H + 52, H + 64, 8, mx + w * .5, mz, yellow);
+  box(9, H + 52, H + 62, 9, mx, mz + 2, yellow);
+  box(1, H + 20, H + 62, 1, mx - w * 1.3, mz, dark);
+  g.userData = { s, ts: 1, base: 0, top: H + 70 };
+  back.scene.add(g);
+  return g;
+}
+// Buildings rise up from below the frame and sink back down.
+function rise(b) {
+  const u = b.userData;
+  b.position.y = u.base - (1 - ease(u.s)) * (u.top + 450);
+  b.visible = u.s > 0;
+}
+function setProjects(p) {
+  p = Math.min(p, 150);
+  const whole = Math.floor(p + 1e-6), partial = p - whole > .05, total = whole + (partial ? 1 : 0);
+  if (total === city.total && partial === city.partial) return;
+  city.total = total; city.partial = partial;
+  layoutCity();
+}
+function layoutCity() {
+  const N = city.total, regular = N - (city.partial ? 1 : 0);
+  const perRow = N <= 14 ? Math.max(N, 1) : Math.ceil(N / Math.ceil(N / 14));
+  const span = city.halfW * 1.8;
+  // The site under construction takes a front-row slot so the crane stays in view.
+  const craneSlot = city.partial ? Math.min(N - 1, Math.floor(Math.min(perRow, N) * .7)) : N;
+  // Tops land in a band above the pile; rows further back are taller so they still clear the front row.
+  const height = (t, z) => city.unitH * (.2 + t * .22) * (1 - z / back.D);
+  for (let i = 0; i < Math.max(regular, city.items.length); i++) {
+    if (i >= regular) { if (city.items[i]) city.items[i].userData.ts = 0; continue; }
+    const b = city.items[i] ||= tower(i), u = b.userData;
+    const slot = slotFor(i >= craneSlot ? i + 1 : i, N, perRow, span);
+    u.base = u.top = height(u.t, slot.z);
+    b.position.x = slot.x; b.position.z = slot.z;
+    b.scale.set(slot.w, u.top + DEEP, slot.w * u.d);
+    scaleUV(b.geometry, slot.w, u.top + DEEP, slot.w * u.d);
+    u.ts = 1; rise(b);
+  }
+  const old = city.site;
+  if (city.partial) {
+    const slot = slotFor(craneSlot, N, perRow, span), w = Math.max(slot.w, 50) * .9;
+    if (old) back.scene.remove(old);
+    city.site = constructionSite(w, height(.35, slot.z), old ? old.userData.s : 0);
+    city.site.position.set(slot.x, 0, slot.z + 30); rise(city.site);
+  } else if (old) old.userData.ts = 0;
+}
+// Spread buildings across the backdrop; with many projects they form rows of a city.
+function slotFor(i, N, perRow, span) {
+  const row = Math.floor(i / perRow), colI = i % perRow, inRow = Math.min(perRow, N - row * perRow);
+  const spacing = span / Math.max(inRow, 1), r = rng(77 + i * 13);
+  const x = -span / 2 + spacing * (colI + .5) + (row % 2 ? spacing * .3 : 0) + (r() - .5) * spacing * .2;
+  return { x, z: -row * 240 - r() * 40, w: Math.min(80, spacing * (.4 + r() * .2)) };
+}
+function stepCity(dt) {
+  let busy = false;
+  const all = city.site ? [...city.items, city.site] : city.items;
+  for (const b of all) {
+    const u = b.userData;
+    if (u.s === u.ts) continue;
+    u.s = reduceMotion ? u.ts : u.ts > u.s ? Math.min(1, u.s + dt / .6) : Math.max(0, u.s - dt / .35);
+    rise(b);
+    if (u.s !== u.ts) busy = true;
+  }
+  return busy;
+}
+
+// ---------- Framing: a fixed camera scale that never zooms out ----------
+// The scale is set once so a default-size pile fills about 70% of the width (92% on phones). A bigger pile simply gets bigger: on wide
+// screens the scene grows taller to fit its peak (up to the window height), and beyond that it runs off the frame.
+// The camera only pans, so the pile's front foot sits on the bottom edge, centered on the pile.
+const R0 = 40, TOP0 = R0 * .83, FOV0 = 16, BACK_FOV0 = 30, FRAME_Y0 = -.99, YTOP = .42;
+const fitCam = new THREE.PerspectiveCamera(FOV0, 1, 1, 12000);
+const goal = { pos: new THREE.Vector3(), target: new THREE.Vector3(), sx: 0, y0: 0, h: 0, ready: false };
+const lookNow = new THREE.Vector3(), shiftNow = { sx: 0, y0: 0, h: 0 };
+let frameDirty = true, framedOnce = false;
+const narrow = () => innerWidth < 850;
+// The scene's resting height: 5:4 on wide screens (capped by the window), the CSS height on phones.
+function baseHeight() {
+  return narrow() ? stage.clientHeight || 1 : Math.max(360, Math.min(stage.clientWidth * .8, innerHeight - 130));
+}
+function computeFraming() {
+  const pb = pile.box || { R: 8, top: 0 };
+  const w = stage.clientWidth || 1, baseH = baseHeight(), v = new THREE.Vector3();
+  const dir = new THREE.Vector3(Math.cos(VIEW_EL) * Math.sin(VIEW_AZ), Math.sin(VIEW_EL), Math.cos(VIEW_EL) * Math.cos(VIEW_AZ));
+  const target = new THREE.Vector3(0, TOP0 * .4, 0);
+  fitCam.aspect = w / baseH; fitCam.fov = FOV0; fitCam.updateProjectionMatrix();
+  const place = d => { fitCam.position.copy(target).addScaledVector(dir, d); fitCam.lookAt(target); fitCam.updateMatrixWorld(); };
+  const ring = (R, top, out) => {
+    for (let k = 0; k < 24; k++) { const a = k / 24 * Math.PI * 2; out.push(new THREE.Vector3(Math.cos(a) * R, 0, Math.sin(a) * R), new THREE.Vector3(Math.cos(a) * R * .45, top * .6, Math.sin(a) * R * .45)); }
+    out.push(new THREE.Vector3(0, top, 0));
+    return out;
+  };
+  // Camera distance: the reference pile spans 70% of the width (92% on phones). It does not depend on the actual pile.
+  const ref = ring(R0 * .92, TOP0, []);
+  let lo = 2, hi = 20000;
+  for (let it = 0; it < 32; it++) {
+    const mid = (lo + hi) / 2; place(mid);
+    let x0 = 1e9, x1 = -1e9, bad = false;
+    for (const p of ref) { v.copy(p).project(fitCam); if (v.z < -1 || v.z > 1) { bad = true; break; } x0 = Math.min(x0, v.x); x1 = Math.max(x1, v.x); }
+    if (bad || (x1 - x0) / 2 > .96 * (narrow() ? .92 : .7)) lo = mid; else hi = mid;
+  }
+  place(hi);
+  // Pan to the actual pile and hats.
+  const pts = ring(Math.max(pb.Rs || pb.R * .92, 6), Math.max(pb.top, 3), []), nPile = pts.length;
+  let y0 = 1e9, px0 = 1e9, px1 = -1e9, py1 = -1e9;
+  for (let k = 0; k < pts.length; k++) {
+    v.copy(pts[k]).project(fitCam);
+    if (v.z < -1 || v.z > 1) continue;
+    if (k < nPile) y0 = Math.min(y0, v.y);
+    if (k < nPile) { px0 = Math.min(px0, v.x); px1 = Math.max(px1, v.x); py1 = Math.max(py1, v.y); }
+  }
+  // A big pile has a sparse fringe of scattered straps in front of its solid base. Anchor the bottom edge where the
+  // pile turns solid (only ~4% of units sit lower on screen), so the fringe falls below the frame rather than showing gaps.
+  const st = pile.mode && pileState(pile.mode), n = st ? Math.min(pile.target, st.placed.length) : 0;
+  if (n > 50) {
+    const ys = [];
+    for (let i = 0, step = Math.max(1, Math.floor(n / 1500)); i < n; i += step) { const p = st.placed[i]; ys.push(v.set(p.cx, p.y0, p.cz).project(fitCam).y); }
+    ys.sort((a, b) => a - b);
+    y0 = ys[Math.floor(ys.length * .04)];
+  }
+  goal.target.copy(target); goal.pos.copy(fitCam.position);
+  goal.sx = -(px0 + px1) / 2; goal.y0 = y0;
+  // On wide screens, grow the scene so the peak stays below the number, up to the window height.
+  const peak = (py1 - y0) / 2 * baseH, room = baseH * (1 - YTOP) / 2;
+  goal.h = narrow() ? baseH : Math.min(innerHeight - 32, Math.max(baseH, peak + room));
+  goal.ready = true;
+  // Hard hats: the same lens and distance as the pile, with the group's left edge and front row set into the lower-left corner.
+  if (people.n) {
+    let gx0 = 1e9, gx1 = -1e9, gz0 = 1e9, gz1 = -1e9;
+    for (let i = 0; i < people.n; i++) { const f = people.list[i]; gx0 = Math.min(gx0, f.tx); gx1 = Math.max(gx1, f.tx); gz0 = Math.min(gz0, f.tz); gz1 = Math.max(gz1, f.tz); }
+    front.center.set((gx0 + gx1) / 2, 8, (gz0 + gz1) / 2);
+    front.span = Math.hypot(gx1 - gx0, gz1 - gz0) / 2 + 30;
+    fitCam.position.copy(front.center).addScaledVector(dir, hi); fitCam.lookAt(front.center); fitCam.updateMatrixWorld();
+    let hx0 = 1e9, hy0 = 1e9;
+    for (let i = 0; i < people.n; i++) {
+      const f = people.list[i];
+      for (const [dx, dz] of [[-7, 0], [7, 0], [0, -7], [0, 7]]) { v.set(f.tx + dx, 0, f.tz + dz).project(fitCam); hx0 = Math.min(hx0, v.x); hy0 = Math.min(hy0, v.y); }
+    }
+    front.goalSx = -.97 - hx0; front.goalY0 = hy0;
+  }
+  const span = pb.R + 40, top = Math.max(pb.top, 6);
+  sun.target.position.set(0, 0, 0);
+  sun.position.set(-span * .9, span * 1.8 + top, span * 1.1);
+  const sc = sun.shadow.camera; sc.left = sc.bottom = -span; sc.right = sc.top = span; sc.near = 1; sc.far = span * 6 + top * 2; sc.updateProjectionMatrix();
+}
+// Keep the picture's scale fixed at any scene height: widen the lens with the height, then shift it so the pile's foot
+// sits on the bottom edge. The skyline gets the same treatment, so its buildings keep their size and stay on the ground.
+function applyShift() {
+  const w = stage.clientWidth || 1, h = stage.clientHeight || 1, k = h / baseHeight();
+  camera.fov = 2 * Math.atan(Math.tan(FOV0 * DEG / 2) * k) / DEG;
+  camera.setViewOffset(w, h, -shiftNow.sx * w / 2, (FRAME_Y0 - shiftNow.y0 / k) * h / 2, w, h);
+  front.cam.fov = camera.fov;
+  front.cam.setViewOffset(w, h, -front.sx * w / 2, (FRAME_Y0 - front.y0 / k) * h / 2, w, h);
+  back.cam.fov = 2 * Math.atan(Math.tan(BACK_FOV0 * DEG / 2) * k) / DEG;
+  back.cam.setViewOffset(w, h, 0, (1 / k - 1) * h / 2, w, h);
+}
+function stepCamera(dt) {
+  if (!goal.ready) return false;
+  if (!framedOnce || reduceMotion) {
+    camera.position.copy(goal.pos); lookNow.copy(goal.target);
+    shiftNow.sx = goal.sx; shiftNow.y0 = goal.y0; shiftNow.h = goal.h; front.sx = front.goalSx; front.y0 = front.goalY0; framedOnce = true;
+  } else {
+    const k = 1 - Math.exp(-dt * 4);
+    camera.position.lerp(goal.pos, k); lookNow.lerp(goal.target, k);
+    shiftNow.sx += (goal.sx - shiftNow.sx) * k; shiftNow.y0 += (goal.y0 - shiftNow.y0) * k; shiftNow.h += (goal.h - shiftNow.h) * k;
+    front.sx += (front.goalSx - front.sx) * k; front.y0 += (front.goalY0 - front.y0) * k;
+  }
+  if (narrow()) { stage.style.height = stage.style.maxHeight = ''; }
+  else { const hh = Math.round(shiftNow.h); if (Math.abs(stage.clientHeight - hh) >= 1) { stage.style.maxHeight = 'none'; stage.style.height = hh + 'px'; } }
+  camera.lookAt(lookNow);
+  front.cam.position.copy(camera.position).sub(lookNow).add(front.center); front.cam.lookAt(front.center);
+  frontSun.target.position.copy(front.center);
+  frontSun.position.copy(sun.position).sub(sun.target.position).setLength(front.span * 4).add(front.center);
+  { const sc = frontSun.shadow.camera; sc.left = sc.bottom = -front.span; sc.right = sc.top = front.span; sc.near = 1; sc.far = front.span * 8; sc.updateProjectionMatrix(); }
+  applyShift();
+  return Math.abs(front.goalSx - front.sx) > .002 || Math.abs(front.goalY0 - front.y0) > .002 || camera.position.distanceTo(goal.pos) > .05 || Math.abs(goal.y0 - shiftNow.y0) > .002 || Math.abs(goal.sx - shiftNow.sx) > .002 || Math.abs(goal.h - shiftNow.h) > .5;
+}
+
+// ---------- Loop ----------
+function resize() {
+  const w = stage.clientWidth, h = stage.clientHeight;
+  if (!w || !h) return;
+  renderer.setSize(w, h, false);
+  camera.aspect = back.cam.aspect = w / h;
+  applyShift();
+  city.halfW = back.D * Math.tan(BACK_FOV0 * DEG / 2) * w / baseHeight();
+  layoutCity(); frameDirty = true; wake();
+}
+function draw() {
+  renderer.clear();
+  renderer.toneMapping = THREE.NoToneMapping;
+  renderer.render(back.scene, back.cam);
+  renderer.clearDepth();
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = .98;
+  renderer.render(scene, camera);
+  renderer.clearDepth();
+  renderer.render(front.scene, front.cam);
+}
+let running = false, last = 0;
+function wake() { if (!running) { running = true; last = performance.now(); requestAnimationFrame(frame); } }
+function frame(now) {
+  const dt = Math.min(.05, Math.max(0, now - last) / 1000); last = now;
+  let busy = stepPile(now);
+  busy = stepPeople(dt) || busy;
+  busy = stepCity(dt) || busy;
+  if (frameDirty) { computeFraming(); frameDirty = false; }
+  busy = stepCamera(dt) || busy;
+  draw();
+  if (busy) requestAnimationFrame(frame); else running = false;
+}
+new ResizeObserver(resize).observe(stage);
+
+window.moneyScene = {
+  update(st, r) {
+    const amount = Math.max(0, r.net);
+    setPile(amount);
+    if (people.n !== st.pes) { people.n = st.pes; layoutPeople(); frameDirty = true; }
+    setProjects(r.projectsTotal);
+    const proj = Math.round(r.projectsTotal * 10) / 10;
+    stage.setAttribute('aria-label', `A pile of $1 bills worth ${dollars(amount)}, with ${st.pes} project engineer${st.pes === 1 ? '' : 's'} and ${proj} project${proj === 1 ? '' : 's'} a year.`);
+    wake();
+  },
+};
+viz.classList.remove('noviz');
+resize();
+if (window.lastCalc) window.moneyScene.update(window.lastCalc.st, window.lastCalc.r);
 </script>
 </body>
 </html>
